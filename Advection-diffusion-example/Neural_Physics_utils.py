@@ -89,28 +89,88 @@ def create_tensors_2D(nx, ny):
 def create_tensors_adv_diff_2D(nx, ny, ntime):
     input_shape = (1, 1, ny, nx)
     input_shape_pad = (1, 1, ny + 2, nx + 2)
-    values_u = torch.zeros(input_shape, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    values_v = torch.zeros(input_shape, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    values_p = torch.zeros(input_shape, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    values_uu = torch.zeros(input_shape_pad, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    values_vv = torch.zeros(input_shape_pad, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    values_pp = torch.zeros(input_shape_pad, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    b_uu = torch.zeros(input_shape_pad, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    b_vv = torch.zeros(input_shape_pad, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    values_c = torch.zeros(input_shape, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    values_cc = torch.zeros(input_shape_pad, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    predictor_cc = torch.zeros(input_shape_pad, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     results = torch.zeros((ntime+1,1,1,ny,nx), device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     times = torch.zeros(ntime+1, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     print('All the required 2D tensors have been created successfully!')
     print('===========================================================')
-    print('values_u  => u velocity [first step]  - (1,1,ny,nx)')
-    print('values_v  => v velocity [first step]  - (1,1,ny,nx)')
-    print('b_uu      => v velocity [second step] - (1,1,ny+2,nx+2)')
-    print('b_vv      => v velocity [second step] - (1,1,ny+2,nx+2)')
-    print('values_uu => u velocity [first step]  - (1,1,ny+2,nx+2)')
-    print('values_vv => v velocity [first step]  - (1,1,ny+2,nx+2)')
+    print('values_c     => concentration             - (1,1,ny,nx)')
+    print('values_cc    => concentration             - (1,1,ny+2,nx+2)')
+    print('predictor_cc => concentration [predictor] - (1,1,ny+2,nx+2)')
     print('===========================================================')
-    return values_u, values_v, values_uu, values_vv, b_uu, b_vv, results, times    
+    return values_c, values_cc, predictor_cc, results, times    
 
 def get_weights_linear_2D(dx):
+    w1 = torch.tensor([[[[1/3/dx**2], 
+             [1/3/dx**2],
+             [1/3/dx**2]],
+
+            [[1/3/dx**2],
+             [-8/3/dx**2],
+             [1/3/dx**2]],
+
+            [[1/3/dx**2],
+             [1/3/dx**2],
+             [1/3/dx**2]]]])
+
+    w2 = torch.tensor([[[[0],  # Central differencing for x-advection and second-order time scheme
+             [0],
+             [0]],
+
+            [[-1/(2*dx)],
+             [0.0],
+             [ 1/(2*dx)]],
+
+            [[0],
+             [0],
+             [0]]]])
+
+    w3 = torch.tensor([[[[0],  # Central differencing for y-advection and second-order time scheme
+             [-1/(2*dx)],
+             [0]],
+
+            [[0.0],
+             [0.0],
+             [0.0]],
+
+            [[0],
+             [1/(2*dx)],
+             [0]]]])
+
+    wA = torch.tensor([[[[-1/3/dx**2],  # A matrix for Jacobi
+             [-1/3/dx**2],
+             [-1/3/dx**2]],
+
+            [[-1/3/dx**2],
+             [8/3/dx**2],
+             [-1/3/dx**2]],
+
+            [[-1/3/dx**2],
+             [-1/3/dx**2],
+             [-1/3/dx**2]]]])
+
+    w1 = torch.reshape(w1, (1,1,3,3))
+    w2 = torch.reshape(w2, (1,1,3,3))
+    w3 = torch.reshape(w3, (1,1,3,3))
+    wA = torch.reshape(wA, (1,1,3,3)) 
+    w_res = torch.zeros([1,1,2,2]) 
+    w_res[0,0,:,:] = 0.25
+    diag = np.array(wA)[0,0,1,1]        # Diagonal component
+    print('All the required 2D filters have been created successfully!')
+    print('===========================================================')
+    print('w1    => second order derivative  - (1,1,3,3)')
+    print('w2    => first order derivative x - (1,1,3,3)')
+    print('w3    => first order derivative y - (1,1,3,3)')
+#    print('wA    => second order derivative  - (1,1,3,3)')
+#    print('w_res => Restriction operation    - (1,1,3,3)')
+    print('diag  => Diagonal component of wA - (1,1,1,1)')
+    print('===========================================================')
+    return w1, w2, w3, wA, diag #w1, w2, w3, wA, wRes, diag 
+
+
+def get_weights_linear_2D_lumping(dx):
     w1 = torch.tensor([[[[1/3/dx**2], 
              [1/3/dx**2],
              [1/3/dx**2]],
