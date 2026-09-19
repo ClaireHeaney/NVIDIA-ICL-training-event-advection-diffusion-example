@@ -103,41 +103,31 @@ def create_tensors_adv_diff_2D(nx, ny, ntime):
     return values_c, values_cc, predictor_cc, results, times    
 
 def get_weights_linear_2D(dx):
-    w1 = torch.tensor([[[[1/3/dx**2], 
-             [1/3/dx**2],
-             [1/3/dx**2]],
+#    w1 = torch.tensor([[[
+#             [0, 1/dx**2, 0],
+#             [1/dx**2, -4/dx**2, 1/dx**2],
+#             [0, 1/dx**2, 0] 
+#             ]]])
 
-            [[1/3/dx**2],
-             [-8/3/dx**2],
-             [1/3/dx**2]],
+    w1 = torch.tensor([[[
+                [0,  1, 0],
+                [1, -4, 1],
+                [0,  1, 0]
+                          ]]],dtype=torch.float32
+                          ) / dx**2
+             
+    w2 = torch.tensor([[[
+            [0, 0, 0],
+            [-1/(2*dx), 0.0, 1/(2*dx)],
+            [0, 0, 0]
+            ]]])
 
-            [[1/3/dx**2],
-             [1/3/dx**2],
-             [1/3/dx**2]]]])
 
-    w2 = torch.tensor([[[[0],  # Central differencing for x-advection and second-order time scheme
-             [0],
-             [0]],
-
-            [[-1/(2*dx)],
-             [0.0],
-             [ 1/(2*dx)]],
-
-            [[0],
-             [0],
-             [0]]]])
-
-    w3 = torch.tensor([[[[0],  # Central differencing for y-advection and second-order time scheme
-             [-1/(2*dx)],
-             [0]],
-
-            [[0.0],
-             [0.0],
-             [0.0]],
-
-            [[0],
-             [1/(2*dx)],
-             [0]]]])
+    w3 = torch.tensor([[[         # Central differencing for y-advection and second-order time scheme
+            [0, -1/(2*dx), 0],
+            [0,  0,        0],
+            [0, 1/(2*dx),  0]
+                           ]]])
 
     wA = torch.tensor([[[[-1/3/dx**2],  # A matrix for Jacobi
              [-1/3/dx**2],
@@ -183,17 +173,17 @@ def get_weights_linear_2D_lumping(dx):
              [1/3/dx**2],
              [1/3/dx**2]]]])
 
-    w2 = torch.tensor([[[[1/(12*dx)],  # Central differencing for y-advection and second-order time scheme
+    w2 = torch.tensor([[[[-1/(12*dx)],  # Central differencing for x-advection and second-order time scheme
              [0.0],
-             [-1/(12*dx)]],
+             [1/(12*dx)]],
 
-            [[1/(3*dx)],
+            [[-1/(3*dx)],
              [0.0],
-             [-1/(3*dx)]],
+             [1/(3*dx)]],
 
-            [[1/(12*dx)],
+            [[-1/(12*dx)],
              [0.0],
-             [-1/(12*dx)]]]])
+             [1/(12*dx)]]]])
 
     w3 = torch.tensor([[[[-1/(12*dx)],  # Central differencing for y-advection and second-order time scheme
              [-1/(3*dx)],
