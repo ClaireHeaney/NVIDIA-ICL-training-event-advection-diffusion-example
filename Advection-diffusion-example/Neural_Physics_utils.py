@@ -102,12 +102,7 @@ def create_tensors_adv_diff_2D(nx, ny, ntime):
     print('===========================================================')
     return values_c, values_cc, predictor_cc, results, times    
 
-def get_weights_linear_2D(dx):
-#    w1 = torch.tensor([[[
-#             [0, 1/dx**2, 0],
-#             [1/dx**2, -4/dx**2, 1/dx**2],
-#             [0, 1/dx**2, 0] 
-#             ]]])
+def get_weights_adv_diff_2D(dx):
 
     w1 = torch.tensor([[[
                 [0,  1, 0],
@@ -129,35 +124,18 @@ def get_weights_linear_2D(dx):
             [0, 1/(2*dx),  0]
                            ]]])
 
-    wA = torch.tensor([[[[-1/3/dx**2],  # A matrix for Jacobi
-             [-1/3/dx**2],
-             [-1/3/dx**2]],
-
-            [[-1/3/dx**2],
-             [8/3/dx**2],
-             [-1/3/dx**2]],
-
-            [[-1/3/dx**2],
-             [-1/3/dx**2],
-             [-1/3/dx**2]]]])
 
     w1 = torch.reshape(w1, (1,1,3,3))
     w2 = torch.reshape(w2, (1,1,3,3))
     w3 = torch.reshape(w3, (1,1,3,3))
-    wA = torch.reshape(wA, (1,1,3,3)) 
-    w_res = torch.zeros([1,1,2,2]) 
-    w_res[0,0,:,:] = 0.25
-    diag = np.array(wA)[0,0,1,1]        # Diagonal component
     print('All the required 2D filters have been created successfully!')
     print('===========================================================')
     print('w1    => second order derivative  - (1,1,3,3)')
     print('w2    => first order derivative x - (1,1,3,3)')
     print('w3    => first order derivative y - (1,1,3,3)')
-#    print('wA    => second order derivative  - (1,1,3,3)')
-#    print('w_res => Restriction operation    - (1,1,3,3)')
-    print('diag  => Diagonal component of wA - (1,1,1,1)')
     print('===========================================================')
-    return w1, w2, w3, wA, diag #w1, w2, w3, wA, wRes, diag 
+    return w1, w2, w3 #w1, w2, w3, wA, wRes, diag 
+    
 
 
 def get_weights_linear_2D_lumping(dx):
