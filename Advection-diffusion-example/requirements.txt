@@ -1,6 +1,6 @@
 numpy
 torch
-jupyter notebook
+notebook
 ipython
 matplotlib
 plotly
